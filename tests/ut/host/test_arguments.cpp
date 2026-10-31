@@ -10,6 +10,7 @@
 
 #include <gtest/gtest.h>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <stdexcept>
 #include <tuple>
@@ -97,4 +98,21 @@ TEST_F(AtvossArgumentsTest, AtvossArgumentsTestCase)
     auto arguments = Atvoss::ArgumentsBuilder{}.inputOutput(t1, t2, a, t3).build();
     auto arg = std::get<2>(std::get<0>(arguments));
     EXPECT_EQ(arg, 1.0f);
+}
+
+TEST_F(AtvossArgumentsTest, RejectsNegativeInt64Shape)
+{
+    int64_t negativeFirst[] = {-1, 2};
+    EXPECT_THROW({ Atvoss::Tensor<float> tensor(nullptr, negativeFirst, 2); }, std::runtime_error);
+
+    int64_t negativeLater[] = {2, -1};
+    try {
+        Atvoss::Tensor<float> tensor(nullptr, negativeLater, 2);
+        FAIL() << "negative dimensions must be rejected at every position";
+    } catch (const std::runtime_error& error) {
+        EXPECT_STREQ(error.what(), "input shape contains a negative dimension");
+    }
+
+    int64_t minimum[] = {1, INT64_MIN};
+    EXPECT_THROW({ Atvoss::Tensor<float> tensor(nullptr, minimum, 2); }, std::runtime_error);
 }
